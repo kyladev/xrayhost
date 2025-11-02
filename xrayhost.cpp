@@ -2,7 +2,6 @@
 //   cl /nologo /LD /EHsc /std:c++17 XrayHost.cpp /link /MACHINE:X64
 // Build (x86):
 //   cl /nologo /LD /EHsc /std:c++17 XrayHost.cpp /link /MACHINE:X86
-//
 // Exports (C ABI, __stdcall):
 //   BOOL  XH_Init(LPCWSTR dllPathOrNull)         // loads xraywrapper.dll (optional path; nullptr => "xraywrapper.dll")
 //   int   XH_StartJson(const char* json)         // start from JSON string
@@ -14,8 +13,7 @@
 //   UINT  XH_PollLogA(char* buf, UINT cap)       // copy any pending log bytes
 //   UINT  XH_VersionA(char* buf, UINT cap)       // copy version string
 //cl /nologo /LD /EHsc /std:c++17 XrayHost.cpp /link /MACHINE:X64
-// Note: Keep xraywrapper.dll next to your EXE/DLL or pass a full path to XH_Init.
-//       Arch must match (x64 <-> x64, x86 <-> x86).
+//keep xraywrapper.dll next to your xraywrapper.dll or pass a full path to XH_Init.
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -27,7 +25,6 @@
 
 static HMODULE g_xray = nullptr;
 
-// Go DLL exports (C ABI, cdecl in generated header; calling via function ptr is fine)
 using fn_Xray_Version   = const char* (__cdecl *)(void);
 using fn_Xray_Start     = int         (__cdecl *)(const char*);
 using fn_Xray_Reload    = int         (__cdecl *)(const char*);
@@ -125,21 +122,18 @@ extern "C" __declspec(dllexport) int __stdcall XH_Stop() {
     return pStop();
 }
 
-// Copies last error into buf, returns number of bytes written (not incl. NUL)
 extern "C" __declspec(dllexport) unsigned __stdcall XH_LastErrorA(char* buf, unsigned cap) {
     if (!EnsureLoaded(nullptr)) return 0;
     if (!buf || cap == 0) return 0;
     return pLastError(buf, cap);
 }
 
-// Copies pending logs into buf (up to cap-1), returns bytes written
 extern "C" __declspec(dllexport) unsigned __stdcall XH_PollLogA(char* buf, unsigned cap) {
     if (!EnsureLoaded(nullptr)) return 0;
     if (!buf || cap == 0) return 0;
     return pPollLog(buf, cap);
 }
 
-// Convenience: copy version string into caller buffer
 extern "C" __declspec(dllexport) unsigned __stdcall XH_VersionA(char* buf, unsigned cap) {
     if (!EnsureLoaded(nullptr)) return 0;
     if (!buf || cap == 0) return 0;
